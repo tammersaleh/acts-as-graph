@@ -13,22 +13,31 @@ module TammerSaleh #:nodoc:
             @reflection = reflection
           end
           
-          # Yields once for each node in the collection, and 
-          # recursively for all nodes in sub-collections.
-          def each(&block) # :yields: node
+          # Calls &block once for each node in collection, recursively, 
+          # passing that node as a parameter.  Currently implemented as 
+          # a depth first search.
+          #
+          # :call-seq:
+          #   each { |node| ... }
+          def each(seen = [], &block) # :yields: node
             @collection.each do |node|
-              node_collection = node.send(@reflection.name)
-              node_collection.recursive.each(&block)
-              block.call(node)
+              if not seen.include?(node)
+                seen << node  # mark the node as seen so we don't visit it twice
+                node_collection = node.send(@reflection.name)
+                node_collection.recursive.each(seen, &block)
+                block.call(node)
+              end
             end
           end
 
           # Returns all nodes in the current collection 
           # and all sub-collections (collected recursively).
           def to_a() # :doc:
-            ary = []
-            @collection.each { |x| ary << x }
-            # @collection.inject([]) { |ary,x| ary << x }
+            self.inject([]) { |ary,x| ary << x }
+          end
+          
+          def method_missing(message, *args)
+            self.to_a.send(message, args)
           end
         end
 
@@ -77,10 +86,10 @@ module TammerSaleh #:nodoc:
           end
           
           def adding_nodes_maintains_DAC?(nodes)
-            if @reflection.name == :children
-              other_reflection_name = :parents
+            if @reflection.name == :children    # options[:child_collection]
+              other_reflection_name = :parents  # options[:parent_collection]
             else 
-              other_reflection_name = :children
+              other_reflection_name = :children # options[:child_collection]
             end
             
             nodes.each do |new_node|

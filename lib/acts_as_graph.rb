@@ -70,7 +70,7 @@ module TammerSaleh  #:nodoc:
         # +directed+:: Determines whether or not the graph is directed.  Defaults to +true+. <i>Undirected graphs are not yet implemented</i>.
         # +child_collection+:: Name of the child collection.  Defaults to +children+.
         # +parent_collection+:: Name of the child collection.  Defaults to +parents+.
-        def acts_as_graph(options = {})
+        def acts_as_graph(options)
           extend  TammerSaleh::Acts::Graph::SingletonMethods
           include TammerSaleh::Acts::Graph::InstanceMethods
           #--
@@ -86,6 +86,7 @@ module TammerSaleh  #:nodoc:
             :join_table              => options[:edge_table].to_s,
             :association_foreign_key => "parent_id",
             :foreign_key             => "child_id" do
+              # XXX Need to find a way to get the options into the Extensions:HABTM namespace...
             include TammerSaleh::Acts::Graph::Extensions::HABTM
           end
           

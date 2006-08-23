@@ -4,7 +4,7 @@ module TammerSaleh #:nodoc:
       module Options #:nodoc:
         DEFAULTS = {
           :class_name        => :REQUIRED,
-          :edge_table        => "#{self.class.to_s.underscore}_edges",
+          :edge_table        => "#{self.class.to_s.underscore.pluralize}_edges",
           :parent_col        => "parent_id",
           :child_col         => "child_id",
           :allow_cycles      => false,
