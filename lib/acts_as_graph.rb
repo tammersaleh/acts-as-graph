@@ -1,4 +1,3 @@
-#require_dependency 'options'
 require_dependency 'acts_as_graph_extensions'
 
 # Adds the following collections:
@@ -34,12 +33,11 @@ module TammerSaleh  #:nodoc:
         #     acts_as_graph :edge_table => "dependencies"
         #   end
         # 
-        #   Example : 
-        #   task1
-        #    +- task2 
-        #    |   +- task3
-        #    |   +- task4
-        #    \- task3
+        #   # task1
+        #   #  +- task2 
+        #   #  |   +- task3
+        #   #  |   +- task4
+        #   #  \- task3
         # 
         #   task1 = Task.new(:name => "Task 1")
         #   task2 = Task.new(:name => "Task 2")
