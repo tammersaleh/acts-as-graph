@@ -2,9 +2,13 @@ module TammerSaleh #:nodoc:
   module Acts #:nodoc:
     module Graph #:nodoc
       module Extensions #:nodoc:
+        # The Recursive class implements a Depth First Search on the collection.
+        # All Enumerable methods (+each+, +map+, +find+, etc.) are defined on objects of 
+        # this class.  In addition, it supports <tt>to_a()</tt>, and passes all unknown methods 
+        # to the array returned from that call.
         class Recursive
           #--
-          # XXX Should make this a proxy obj like AssociationProxy
+          # Note: Should consider making this a proxy obj like AssociationProxy
           #++
           include Enumerable
           
@@ -13,13 +17,12 @@ module TammerSaleh #:nodoc:
             @reflection = reflection
           end
           
-          # Calls &block once for each node in collection, recursively, 
-          # passing that node as a parameter.  Currently implemented as 
-          # a depth first search.
+          # call-seq:
+          #     each { |node| ... } -> nil
           #
-          # :call-seq:
-          #   each { |node| ... }
-          def each(seen = [], &block) # :yields: node
+          # Calls the given block once for each node in the DFS, 
+          # passing that node as a parameter.
+          def each(seen = [], &block) 
             @collection.each do |node|
               if not seen.include?(node)
                 seen << node  # mark the node as seen so we don't visit it twice
@@ -36,8 +39,12 @@ module TammerSaleh #:nodoc:
             self.inject([]) { |ary,x| ary << x }
           end
           
+          # All other methods on this object are passed on to the array returned by to_a()
+          # This allows you to use the usual array accessors like [] and -
           def method_missing(message, *args)
-            self.to_a.send(message, args)
+            # This is my hack to make recursive act like an array.
+            # puts "method_missing(#{message}, #{args.map(&:class).join(", ")})"
+            self.to_a.send(message, *args)
           end
         end
 
@@ -47,10 +54,8 @@ module TammerSaleh #:nodoc:
           # @owner is set to node that owns collection
           #++
           
-          # Returns the recursive object.  This allows you to work on all of the children or parents
-          # of the given node.  
-          #
-          # See link:classes/TammerSaleh/Acts/Graph/Extensions/Recursive.html for details.
+          # Returns an instance of the Recursive class.  This allows you to work on all of the 
+          # children or parents of the given node.  
           def recursive
             @recursive ||= TammerSaleh::Acts::Graph::Extensions::Recursive.new(self, @reflection)
           end
@@ -86,10 +91,10 @@ module TammerSaleh #:nodoc:
           end
           
           def adding_nodes_maintains_DAC?(nodes)
-            if @reflection.name == :children    # TammerSaleh::Acts::Graph.options[:child_collection]
-              other_reflection_name = :parents  # TammerSaleh::Acts::Graph.options[:parent_collection]
+            if @reflection.name == @owner.class.acts_as_graph_options[:child_collection]
+              other_reflection_name = @owner.class.acts_as_graph_options[:parent_collection]
             else 
-              other_reflection_name = :children # TammerSaleh::Acts::Graph.optionsGraph::options[:child_collection]
+              other_reflection_name = @owner.class.acts_as_graph_options[:child_collection]
             end
             
             nodes.each do |new_node|

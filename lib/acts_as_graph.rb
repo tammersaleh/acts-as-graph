@@ -21,17 +21,17 @@ module TammerSaleh  #:nodoc:
       #++
       module ClassMethods
         
-        # Specify this act if you want to model a graph structure by providing a parents association 
-        # and a children association. This act requires that you have an edge table (used in the HABTM
+        # Specify this act if you want to model a graph structure by providing an inbound association 
+        # and an outbound association. This act requires that you have an edge table (used in the HABTM
         # relationship), which by default is called +CLASS_edges+, which has two columns (+child_id+ and 
-        # +parent_id+) where +CLASS+ is the name of your model.
+        # +parent_id+ by default) where +CLASS+ is the name of your model.
         # 
         # <b>Currently, only DAGs (Directed, Acyclic graphs) are supported</b>.  
         # See {here}[http://en.wikipedia.org/wiki/Directed_acyclic_graph] and
         # {here}[http://mathworld.wolfram.com/AcyclicDigraph.html] for more information.
         # 
         #   class Task < ActiveRecord::Base
-        #     acts_as_graph :class_name => "Task", :edge_table => "dependencies"
+        #     acts_as_graph :edge_table => "dependencies"
         #   end
         # 
         #   Example : 
@@ -50,26 +50,28 @@ module TammerSaleh  #:nodoc:
         #   task2.children << task3
         #   task2.children << task
         # 
-        #   task1.parents                 => []
-        #   task3.parents                 => [task1, task2]
-        #   task1.children                => [task2, task3]
-        #   task1.children.recursive.to_a => [task2, task3, task4]
+        #   task1.parents                                           => []
+        #   task3.parents                                           => [task1, task2]
+        #   task1.children                                          => [task2, task3]
+        #   task1.children.recursive.to_a                           => [task2, task3, task4]
+        #   task1.children.recursive.each { |child| child.spank }   => nil
         # 
-        # The +recursive+ object is added to the +parents+ and +children+ associations.  When coerced into an 
-        # array, it gathers all of the child or parent records recursively (obviously) into a single array.  
+        # The recursive object (of the Recursive class) is added to the +parents+ and +children+ associations, 
+        # and represents a DFS on those collections.
+        # When coerced into an array, it gathers all of the child or parent records recursively (obviously) into a single array.  
         # When +each+ is called on the +recursive+ object, it yields against each record in turn.  This means 
-        # that some operations will be faster when run with the +each+ implementation.
+        # that some operations (such as +include?+) will be faster when run with the +each+ implementation.
         # 
         # The following options are supported, but some have yet to be implemented:
         # 
-        # +class_name+:: Set to the ActiveRecord class that represents nodes.
         # +edge_table+:: HABTM table that represents graph edges.  Defaults to +class_name_id+.
         # +parent_col+:: Column in +edge_table+ that references the parent node.  Defaults to +parent_id+.
         # +child_col+:: Column in +edge_table+ that references the child node.  Defaults to +child_id+.
-        # +allow_cycles+:: Determines whether or not the graph is cyclic.  Defaults to +false+. <i>Cyclic graphs are not yet implemented</i>.
-        # +directed+:: Determines whether or not the graph is directed.  Defaults to +true+. <i>Undirected graphs are not yet implemented</i>.
         # +child_collection+:: Name of the child collection.  Defaults to +children+.
         # +parent_collection+:: Name of the child collection.  Defaults to +parents+.
+        # +allow_cycles+:: Determines whether or not the graph is cyclic.  Defaults to +false+. <i>Cyclic graphs are not yet implemented</i>.
+        # +directed+:: Determines whether or not the graph is directed.  Defaults to +true+. <i>Undirected graphs are not yet implemented</i>.
+        #
         def acts_as_graph(opts)
           #--
           # Note: self.name == "Task"
@@ -78,34 +80,32 @@ module TammerSaleh  #:nodoc:
           
           # This is kinda messy, but I'm not sure of a better way.  It polutes the AR-model's
           # namespace w/ the options class variable.
-          TammerSaleh::Acts::Graph::options = TammerSaleh::Acts::Graph::process_options(opts)
+          mattr_accessor :acts_as_graph_options
+          self.acts_as_graph_options = TammerSaleh::Acts::Graph::process_options(self, opts)
 
           # define HABTM relationships
-          has_and_belongs_to_many TammerSaleh::Acts::Graph::options[:parent_collection],
-            :class_name              => TammerSaleh::Acts::Graph::options[:class_name].to_s,
-            :join_table              => TammerSaleh::Acts::Graph::options[:edge_table].to_s,
-            :association_foreign_key => "parent_id",
-            :foreign_key             => "child_id" do
+          has_and_belongs_to_many self.acts_as_graph_options[:parent_collection].to_sym,
+            :class_name              => self.name,
+            :join_table              => self.acts_as_graph_options[:edge_table].to_s,
+            :association_foreign_key => self.acts_as_graph_options[:parent_col].to_s,
+            :foreign_key             => self.acts_as_graph_options[:child_col].to_s do
             include TammerSaleh::Acts::Graph::Extensions::HABTM
           end
           
-          has_and_belongs_to_many TammerSaleh::Acts::Graph::options[:child_collection],
-            :class_name              => TammerSaleh::Acts::Graph::options[:class_name].to_s,
-            :join_table              => TammerSaleh::Acts::Graph::options[:edge_table].to_s,
-            :association_foreign_key => "child_id",
-            :foreign_key             => "parent_id" do
+          has_and_belongs_to_many self.acts_as_graph_options[:child_collection].to_sym,
+            :class_name              => self.name,
+            :join_table              => self.acts_as_graph_options[:edge_table].to_s,
+            :association_foreign_key => self.acts_as_graph_options[:child_col].to_s,
+            :foreign_key             => self.acts_as_graph_options[:parent_col].to_s do
             include TammerSaleh::Acts::Graph::Extensions::HABTM
           end
         end
         #++
       end
 
-      mattr_accessor :options
-      
-      def self.process_options(opts)
+      def self.process_options(klass, opts)
         default_options = {
-          :class_name        => self.name,
-          :edge_table        => "#{self.name.to_s.underscore.pluralize}_edges",
+          :edge_table        => "#{klass.name.to_s.underscore.pluralize}_edges",
           :parent_col        => "parent_id",
           :child_col         => "child_id",
           :allow_cycles      => false,
