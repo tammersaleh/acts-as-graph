@@ -86,10 +86,10 @@ module TammerSaleh #:nodoc:
           end
           
           def adding_nodes_maintains_DAC?(nodes)
-            if @reflection.name == :children    # options[:child_collection]
-              other_reflection_name = :parents  # options[:parent_collection]
+            if @reflection.name == :children    # TammerSaleh::Acts::Graph.options[:child_collection]
+              other_reflection_name = :parents  # TammerSaleh::Acts::Graph.options[:parent_collection]
             else 
-              other_reflection_name = :children # options[:child_collection]
+              other_reflection_name = :children # TammerSaleh::Acts::Graph.optionsGraph::options[:child_collection]
             end
             
             nodes.each do |new_node|

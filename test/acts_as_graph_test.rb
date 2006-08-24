@@ -7,8 +7,10 @@ class ActsAsGraphTest < Test::Unit::TestCase
     # This idea is noted as being in "Very poor style" by Dave Thomas in Programming Ruby.
     # But, then, what does Dave Thomas know?
 
-    # Load the model that is being referenced.
-    if require(File.dirname(__FILE__) + "/models/#{const.to_s.tableize.singularize}")
+    filename = File.dirname(__FILE__) + "/models/#{const.to_s.tableize.singularize}"
+    if File.file? filename + ".rb"
+      # Load the file for the model that is being referenced.
+      require filename
       return const_get(const)
     else
       super
@@ -20,12 +22,12 @@ class ActsAsGraphTest < Test::Unit::TestCase
   
   # Replace this with your real tests.
   def test_name_is_saved
-    t1 = new_task(:test)
+    t1 = create_node(Task, :test)
     assert_equal "test", t1.name
   end
   
   def test_task_can_have_children
-    instantiate_tasks("parent", "child")
+    instantiate_nodes(Task, "parent", "child")
     @parent.children << @child
     assert_equal 1, @parent.children.count
     assert_equal "child", @parent.children.first.name
@@ -33,7 +35,7 @@ class ActsAsGraphTest < Test::Unit::TestCase
 
   def test_children_recursive_each
     all_children = %w{child1 grandchild1 child2 grandchild2 grandchild3}
-    instantiate_tasks("parent", *all_children)
+    instantiate_nodes(Task, "parent", *all_children)
     assert_nothing_raised do
       @parent.children << [@child1, @child2]
       @child1.children << [@grandchild1, @grandchild3]
@@ -46,7 +48,7 @@ class ActsAsGraphTest < Test::Unit::TestCase
     
   def test_children_recursive_to_a
     all_children = %w{child1 grandchild1 child2 grandchild2 grandchild3}
-    instantiate_tasks("parent", *all_children)
+    instantiate_nodes(Task, "parent", *all_children)
     assert_nothing_raised do
       @parent.children << [@child1, @child2]
       @child1.children << [@grandchild1, @grandchild3]
@@ -58,24 +60,34 @@ class ActsAsGraphTest < Test::Unit::TestCase
   def test_children_recursive_method_missing
     family = %w{parent child grandchild}
     assert_nothing_raised do
-      instantiate_tasks(*family)
+      instantiate_nodes(Task, *family)
       @parent.children << @child
       @child.children << @grandchild
     end
     assert_equal (family - ["parent"]).sort, @parent.children.recursive.map(&:name).sort
   end
   
-  private
-  
-  def new_task(name)
-    t = Task.new(:name => name.to_s)
-    assert_nothing_raised { t.save }
-    t
+  def test_graph_with_named_collections
+    assert_nothing_raised do
+      instantiate_nodes(Person, "Tammer", "Andy", "Todd")
+      @Tammer.people_i_like << @Andy
+      @Tammer.people_who_like_me << @Todd
+    end
+    assert_equal ["Andy"], @Tammer.people_i_like.recursive.map(&:name)
+    assert_equal ["Todd"], @Tammer.people_who_like_me.recursive.map(&:name)
   end
   
-  def instantiate_tasks(*tasks)
-    tasks.each do |t|
-      instance_variable_set("@#{t.to_s}".to_sym, new_task(t))
+  private
+  
+  def create_node(klass, name)
+    n = klass.new(:name => name.to_s)
+    assert_nothing_raised { n.save }
+    n
+  end
+  
+  def instantiate_nodes(klass, *nodes)
+    nodes.each do |n|
+      instance_variable_set("@#{n.to_s}".to_sym, create_node(klass, n))
     end
   end
 end

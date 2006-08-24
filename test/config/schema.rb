@@ -1,4 +1,6 @@
-ActiveRecord::Schema.define(:version => 2) do
+ActiveRecord::Migration.verbose = false
+
+ActiveRecord::Schema.define(:version => 1) do
   
   # Set up the Tasks tables (tasks have dependencies)
   ActiveRecord::Base.logger.info "Creating dependencies table"
