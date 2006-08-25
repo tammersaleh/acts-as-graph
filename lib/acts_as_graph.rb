@@ -23,7 +23,7 @@ module TammerSaleh  #:nodoc:
         # acts_as_graph produces a graph structure by providing self-referencing inbound 
         # and outbound association collections to your model.  It requires that you have 
         # an edge table (used in the HABTM relationship), which by default is called 
-        # +CLASS_edges+ (where +CLASS+ is the name of your model), which has two columns: 
+        # +CLASS_edges+ (where +CLASS+ is the name of your model), and which has two columns: 
         # +child_id+ and +parent_id+ by default.
         # 
         # <b>Currently, only DAGs (Directed, Acyclic graphs) are supported</b>.  
@@ -61,7 +61,7 @@ module TammerSaleh  #:nodoc:
         # associations, and represents a DFS on those collections.  When coerced into an array, 
         # it gathers all of the child or parent records recursively (obviously) into a single array.  
         # When +each+ is called on the +recursive+ object, it yields against each record in turn.  
-        # This means that some operations (such as +include?+) will be faster when run with the 
+        # This means that some operations (such as <tt>include?</tt>) will be faster when run with the 
         # +each+ implementation.
         # 
         # The following options are supported, but some have yet to be implemented:
