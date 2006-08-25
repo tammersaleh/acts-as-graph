@@ -3,6 +3,7 @@ require File.join(File.dirname(__FILE__), 'ptk_helper')
 
 class ActsAsGraphTest < Test::Unit::TestCase
 
+  # This hack autoloads the models from the test/models/CLASSNAME.rb file
   def self.const_missing(const)
     # This idea is noted as being in "Very poor style" by Dave Thomas in Programming Ruby.
     # But, then, what does Dave Thomas know?
@@ -57,6 +58,47 @@ class ActsAsGraphTest < Test::Unit::TestCase
     @parent.children << @child
     assert_equal 1, @parent.children.count
     assert_equal "child", @parent.children.first.name
+  end
+  
+  def test_task_cannot_be_own_child
+    instantiate_nodes(Task, "me")
+    assert_raises(ArgumentError) do
+      @me.children << @me
+    end
+  end
+  
+  def test_task_cannot_be_own_parent
+    instantiate_nodes(Task, "me")
+    assert_raises(ArgumentError) do
+      @me.parents << @me
+    end
+  end
+
+  def test_task_cannot_create_cycle_1
+    instantiate_nodes(Task, "task1", "task2")
+    @task1.children << @task2
+    assert_raises(ArgumentError) do
+      @task2.children << @task1
+    end    
+  end
+  
+  def test_task_cannot_create_cycle_2
+    instantiate_nodes(Task, "task1", "task2", "task3")
+    @task1.children << @task2
+    @task2.children << @task3
+    assert_raises(ArgumentError) do
+      @task3.children << @task1
+    end    
+  end
+
+  def test_task_cannot_create_cycle_3
+    instantiate_nodes(Task, "task1", "task2", "task3", "task4")
+    @task1.children << @task2
+    @task2.children << @task3
+    @task3.children << @task4
+    assert_raises(ArgumentError) do
+      @task4.children << @task1
+    end    
   end
 
   def test_task_children_recursive_each

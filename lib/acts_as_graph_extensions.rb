@@ -63,7 +63,12 @@ module TammerSaleh #:nodoc:
           # Insert a node into the collection.  Raises an exception if the insertion would create
           # a cycle.
           def <<(*nodes)
-            if node_in_collection_twice(nodes) or nodes_already_in_current_collection(nodes)
+            if nodes.include? @owner
+              raise ArgumentError,
+                    "Attempt to add node to own graph collection when " +
+                    ":allow_cycles is set to false."
+            elsif node_in_collection_twice(nodes) or 
+               nodes_already_in_current_collection(nodes)
               raise ArgumentError,
                     "Attempt to add a child node twice when " +
                     ":allow_cycles is set to false."
