@@ -63,27 +63,42 @@ module TammerSaleh #:nodoc:
           # Insert a node into the collection.  Raises an exception if the insertion would create
           # a cycle.
           def <<(*nodes)
+            nodes = flatten_deeper([nodes]) # flatten_deeper is defined in AssociationProxy.rb
+            
+            raise_on_nodes_include_owner(nodes)
+            raise_on_node_added_twice(nodes)
+            raise_on_node_breaks_DAC(nodes)
+            
+            super(nodes)
+          end
+          
+          private
+          
+          def raise_on_nodes_include_owner(nodes)
             if nodes.include? @owner
               raise ArgumentError,
                     "Attempt to add node to own graph collection when " +
                     ":allow_cycles is set to false."
-            elsif node_in_collection_twice(nodes) or 
-               nodes_already_in_current_collection(nodes)
+            end
+          end
+          
+          def raise_on_node_added_twice(nodes)
+            if node_in_array_twice(nodes) or nodes_already_in_current_collection(nodes)
               raise ArgumentError,
                     "Attempt to add a child node twice when " +
                     ":allow_cycles is set to false."
-            elsif not adding_nodes_maintains_DAC?(nodes)
+            end
+          end
+          
+          def raise_on_node_breaks_DAC(nodes)
+            if not adding_nodes_maintains_DAC?(nodes)
               raise ArgumentError,
                     "Adding #{nodes.size > 1 ? "nodes": "node"} " + 
                     "#{nodes.map(&:id)} to node #{@owner.id} " + 
                     "would create a cycle when " +
                     ":allow_cycles is set to false."
-            else  
-              super(nodes)
             end
           end
-          
-          private
           
           def nodes_already_in_current_collection(nodes)
             # The intersection of the args and my immediate children 
@@ -91,7 +106,7 @@ module TammerSaleh #:nodoc:
             return (not (nodes & self).empty?)
           end
           
-          def node_in_collection_twice(nodes)
+          def node_in_array_twice(nodes)
             return (nodes.size < nodes.uniq.size)
           end
           
