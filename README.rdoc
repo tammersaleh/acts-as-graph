@@ -1,5 +1,7 @@
 = acts_as_graph
 
+== OMGSUPERIMPORTANT!  My last update to AAG was around 2006.  That's roughly 40 years ago (in Rails-time).  Consider this abandonware, posted to github in the hopes that some poor coder with <i>way</i> too much free time will give it a home.
+
 The acts_as_graph plugin extends ActiveRecord to implement a connected graph.
 
 acts_as_graph produces a graph structure by providing self-referencing inbound 
